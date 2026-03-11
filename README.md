@@ -21,6 +21,19 @@ Przygotwana przez:
 
 ---
 
+## 🛠️ Wymagania: 
+Zainstalowany Docker oraz Docker Compose.
+
+
+
+## 🚀 Uruchomienie:
+* git clone [https://github.com/MD04-CFC/FITRPG.git](https://github.com/MD04-CFC/FITRPG.git)
+* cd FITRPG
+* docker-compose up --build
+* http://localhost:4200
+
+
+
 ## 🛠️ Stack Technologiczny
 
 Projekt oparty jest na architekturze mikroserwisów w środowisku Monorepo.
