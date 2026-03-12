@@ -7,6 +7,10 @@ app = FastAPI(
     description='API aplikacji FITRPG'
 )
 
+app.add_middleware(
+    CORSMiddleware
+)
+
 @app.get('/api/test')
 def test_check():
     return {'status':'ok', 'message':'Backend dziala poprawnie'}
