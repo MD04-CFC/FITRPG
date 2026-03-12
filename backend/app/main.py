@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import fastapi.middleware
+from ..app.api.routes import router
 
 app = FastAPI(
     title='FITRPG Backend Api',
@@ -11,6 +11,4 @@ app.add_middleware(
     CORSMiddleware
 )
 
-@app.get('/api/test')
-def test_check():
-    return {'status':'ok', 'message':'Backend dziala poprawnie'}
+app.include_router(router, prefix='api')
