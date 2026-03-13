@@ -2,11 +2,12 @@
 
 > **Web app for health created by students.** > FITRPG to aplikacja webowa łącząca dbanie o zdrowy styl życia z elementami grywalizacji. Trenuj, jedz zdrowo, zdobywaj punkty i podejmuj wyzwania!
 
-Przygotwana przez:
+Przygotowana przez:
 - Maciej Dąbrowski
 - Jakub Dąbrowski
 - Jakub Rosa
 - Maja Szerszeń
+- Joanna Dagil
 - Stanisław Mierzejewski
 - Semion Lisichik
 - Antoni Szymański
@@ -14,10 +15,10 @@ Przygotwana przez:
 
 ## ✨ Główne funkcjonalności
 
-* **📅 Harmonogramy Treningów:** Rozpisywanie planów treningowych i przypomnienia o aktywności (Push Notifications).
-* **📸 Ocena Posiłków AI:** Zrób zdjęcie swojego jedzenia, a nasz moduł Machine Learning (Computer Vision) oceni jego zdrowotność i przyzna punkty.
-* **🏆 Grywalizacja:** Zdobywaj punkty doświadczenia, bierz udział w wyzwaniach i pnij się w rankingu (Leaderboards).
-* **👤 Profile Użytkowników:** Śledzenie własnego progresu i statystyk zdrowotnych.
+* **📅 Harmonogramy Treningów:** Rozpisywanie planów treningowych i przypomnienia o aktywności (Push/SMS Notifications)
+* **📸 Ocena Posiłków AI:** Zrób zdjęcie swojego jedzenia, a nasz moduł Machine Learning (Computer Vision) oceni jego zdrowotność i przyzna punkty
+* **🏆 Grywalizacja:** Zdobywaj punkty doświadczenia, bierz udział w wyzwaniach i pnij się w rankingu (Leaderboards)
+* **👤 Profile Użytkowników:** Śledzenie własnego progresu i statystyk zdrowotnych
 
 ---
 
@@ -40,9 +41,9 @@ Projekt oparty jest na architekturze mikroserwisów w środowisku Monorepo.
 
 * **Frontend:** Angular (PWA)
 * **Backend API:** Node.js / Python 
-* **Machine Learning:** Python (FastAPI / CNN)
+* **Machine Learning:** Python (FastAPI + CNN)
 * **Baza Danych:** PostgreSQL (zarządzana)
-* **Infrastruktura & DevOps:** Docker, GitHub Actions (CI/CD), Railway (Deployment), Sentry (Error Tracking)
+* **Infrastruktura & DevOps:** Docker, GitHub Actions (CI/CD), Railway/GCP (Deployment)
 
 ---
 
