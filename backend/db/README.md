@@ -55,8 +55,12 @@ The current application schema lives in `migrations/001_initial_schema.sql`.
   Number from `0` to `1` describing how confident the AI is in a meal classification or estimate.
 - `health_score`
   Manual or AI-generated score on a `1-10` scale for meals or workouts.
+- `meal_type`
+  Controlled meal category: `breakfast`, `lunch`, `dinner`, `snack`, or `other`.
 - `quantity`, `unit`, `grams`
   `quantity` + `unit` represent user-friendly input like `2 pcs` or `250 ml`, while `grams` gives a normalized amount for calculations.
+- `workout_type`
+  Controlled workout category: `strength`, `cardio`, `mobility`, `sport`, or `other`.
 - `exercise_order`
   Keeps exercise display order inside one workout.
 - `source_type` and `source_id` in `exp_events`
@@ -84,7 +88,7 @@ This is intentional. Parent tables are optimized for quick reads of the full obj
 1. Insert into `users`.
 2. Insert login credentials into `user_auth`.
 3. Optionally create `user_profiles`.
-4. Create initial `user_progress` row.
+4. `user_progress` is created automatically by a database trigger.
 
 #### User Completes Profile
 
@@ -127,4 +131,5 @@ This is intentional. Parent tables are optimized for quick reads of the full obj
 - The schema does not currently use `foods`, `products`, or `exercises` reference tables.
 - Meal and workout detail tables store direct logged values instead of referencing external dictionaries.
 - Email uniqueness is case-insensitive through a unique index on `LOWER(email)`.
-- `exp_events.source_type` is currently flexible in SQL and should be kept consistent by the backend until a database-level constraint is added.
+- Username uniqueness is also case-insensitive through a unique index on `LOWER(username)`.
+- `exp_events.source_type` is now constrained in SQL to the allowed event source list.

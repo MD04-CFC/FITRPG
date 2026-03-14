@@ -24,7 +24,7 @@ CREATE TABLE user_auth (
 
 CREATE TABLE user_profiles (
     user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    username VARCHAR(30) UNIQUE,
+    username VARCHAR(30),
     display_name VARCHAR(50),
     birth_date DATE,
     sex TEXT,
@@ -32,6 +32,7 @@ CREATE TABLE user_profiles (
     weight_kg NUMERIC(5,2),
     goal TEXT,
     activity_level TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT user_profiles_username_not_blank
@@ -49,6 +50,10 @@ CREATE TABLE user_profiles (
     CONSTRAINT user_profiles_weight_check
         CHECK (weight_kg IS NULL OR weight_kg > 0)
 );
+
+CREATE UNIQUE INDEX user_profiles_username_unique_lower_idx
+    ON user_profiles (LOWER(username))
+    WHERE username IS NOT NULL;
 
 CREATE TABLE meals (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -83,7 +88,10 @@ CREATE TABLE meals (
         CHECK (total_carbs_g IS NULL OR total_carbs_g >= 0),
 
     CONSTRAINT meals_total_fat_check
-        CHECK (total_fat_g IS NULL OR total_fat_g >= 0)
+        CHECK (total_fat_g IS NULL OR total_fat_g >= 0),
+
+    CONSTRAINT meals_type_check
+        CHECK (meal_type IS NULL OR meal_type IN ('breakfast', 'lunch', 'dinner', 'snack', 'other'))
 );
 
 CREATE TABLE meal_items (
@@ -145,7 +153,10 @@ CREATE TABLE workouts (
         CHECK (calories_burned IS NULL OR calories_burned >= 0),
 
     CONSTRAINT workouts_health_score_check
-        CHECK (health_score IS NULL OR health_score BETWEEN 1 AND 10)
+        CHECK (health_score IS NULL OR health_score BETWEEN 1 AND 10),
+
+    CONSTRAINT workouts_type_check
+        CHECK (workout_type IS NULL OR workout_type IN ('strength', 'cardio', 'mobility', 'sport', 'other'))
 );
 
 CREATE TABLE workout_exercises (
@@ -189,6 +200,8 @@ CREATE TABLE workout_exercises (
 
 CREATE INDEX meal_items_meal_id_idx ON meal_items(meal_id);
 CREATE INDEX workout_exercises_workout_id_idx ON workout_exercises(workout_id);
+CREATE INDEX meals_user_eaten_at_idx ON meals(user_id, eaten_at DESC);
+CREATE INDEX workouts_user_performed_at_idx ON workouts(user_id, performed_at DESC);
 
 
 CREATE TABLE exp_events (
@@ -201,8 +214,13 @@ CREATE TABLE exp_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT exp_events_exp_amount_check
-        CHECK (exp_amount <> 0)
+        CHECK (exp_amount <> 0),
+
+    CONSTRAINT exp_events_source_type_check
+        CHECK (source_type IN ('workout', 'meal', 'challenge', 'achievement', 'manual', 'streak'))
 );
+
+CREATE INDEX exp_events_user_created_at_idx ON exp_events(user_id, created_at DESC);
 
 CREATE TABLE user_progress (
     user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -266,12 +284,19 @@ CREATE TABLE user_challenges (
     CONSTRAINT user_challenges_status_check
         CHECK (status IN ('active', 'completed', 'claimed', 'failed')),
 
+    CONSTRAINT user_challenges_completed_after_joined_check
+        CHECK (completed_at IS NULL OR completed_at >= joined_at),
+
+    CONSTRAINT user_challenges_claimed_after_completed_check
+        CHECK (claimed_at IS NULL OR completed_at IS NULL OR claimed_at >= completed_at),
+
     CONSTRAINT user_challenges_unique
         UNIQUE (user_id, challenge_id)
 );
 
 CREATE INDEX user_challenges_user_id_idx ON user_challenges(user_id);
 CREATE INDEX user_challenges_challenge_id_idx ON user_challenges(challenge_id);
+CREATE INDEX user_challenges_user_status_idx ON user_challenges(user_id, status);
 
 CREATE TABLE achievements (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -308,9 +333,55 @@ CREATE TABLE user_achievements (
     CONSTRAINT user_achievements_progress_check
         CHECK (progress_value >= 0),
 
+    CONSTRAINT user_achievements_claimed_after_unlocked_check
+        CHECK (claimed_at IS NULL OR unlocked_at IS NULL OR claimed_at >= unlocked_at),
+
     CONSTRAINT user_achievements_unique
         UNIQUE (user_id, achievement_id)
 );
 
 CREATE INDEX user_achievements_user_id_idx ON user_achievements(user_id);
 CREATE INDEX user_achievements_achievement_id_idx ON user_achievements(achievement_id);
+CREATE INDEX user_achievements_user_unlocked_idx ON user_achievements(user_id, unlocked_at DESC);
+
+CREATE OR REPLACE FUNCTION create_user_progress_after_user_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO user_progress (user_id)
+    VALUES (NEW.id);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_create_user_progress
+AFTER INSERT ON users
+FOR EACH ROW
+EXECUTE FUNCTION create_user_progress_after_user_insert();
+
+CREATE OR REPLACE PROCEDURE proc_register_user(
+    IN p_email VARCHAR(254),
+    IN p_password_hash TEXT,
+    IN p_status TEXT DEFAULT 'active'
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_user_id BIGINT;
+BEGIN
+    IF p_email IS NULL OR char_length(trim(p_email)) = 0 THEN
+        RAISE EXCEPTION 'Email cannot be blank';
+    END IF;
+
+    IF p_password_hash IS NULL OR char_length(trim(p_password_hash)) = 0 THEN
+        RAISE EXCEPTION 'Password hash cannot be blank';
+    END IF;
+
+    INSERT INTO users (email, status)
+    VALUES (trim(p_email), p_status)
+    RETURNING id INTO v_user_id;
+
+    INSERT INTO user_auth (user_id, password_hash)
+    VALUES (v_user_id, trim(p_password_hash));
+END;
+$$;
