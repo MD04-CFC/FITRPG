@@ -1,0 +1,76 @@
+#  Uruchomienie: docker-compose up --build
+#
+#  Aktualnie aktywne serwisy:
+#    - db       = PostgreSQL          → localhost:5432
+#    - backend  = Python/FastAPI      → localhost:8000
+#
+#  Tymczasowo wyłączone (brak aplikacji):
+#    - frontend
+#    - ml
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: fitrpg_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fitrpg}
+      POSTGRES_USER: ${POSTGRES_USER:-fitrpg_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    - ./db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fitrpg_user} -d ${POSTGRES_DB:-fitrpg}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fitrpg_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fitrpg_user}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-fitrpg}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # FRONTEND – wyłączony tymczasowo 
+  # Odkomentuj gdy aplikacja Angular zostanie stworzona
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: fitrpg_frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "4200:80"
+  #   depends_on:
+  #     - backend
+
+  # ML – wyłączony tymczasowo
+  # Odkomentuj gdy plik zostanie stworzony
+  # ml:
+  #   build:
+  #     context: ./ML
+  #     dockerfile: Dockerfile
+  #   container_name: fitrpg_ml
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./ML:/app
+  #   ports:
+  #     - "8001:8001"
+
+volumes:
+  postgres_data:
